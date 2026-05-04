@@ -1,53 +1,92 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tesouro Direto — Análise Completa</title>
-<!-- Scripts Corrigidos -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<style>
-/* Mantive seus estilos originais */
-:root{--bg:#f8f7f4;--sf:#fff;--sf2:#f1f0ec;--bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.18);--tx:#1a1a18;--tx2:#5f5e5a;--tx3:#888780;--bl:#185FA5;--bl-l:#E6F1FB;--bl-d:#0C447C;--gn:#1D9E75;--gn-l:#E1F5EE;--gn-d:#085041;--am:#BA7517;--am-l:#FAEEDA;--am-d:#633806;--rd:#A32D2D;--rd-l:#FCEBEB;--rd-d:#791F1F;--r:10px;--rl:14px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.6}
-/* ... (restante do CSS omitido para brevidade, mantenha o seu) ... */
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesouro Direto - Dashboard</title>
+    
+    <!-- Bibliotecas com carregamento garantido (defer) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+
+    <style>
+        /* Estilo básico para garantir que algo apareça mesmo se o JS falhar */
+        body { font-family: sans-serif; background-color: #f8f7f4; margin: 0; padding: 20px; color: #1a1a18; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #185FA5; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        #status-mensagem { padding: 15px; margin-bottom: 20px; border-radius: 4px; background: #e6f1fb; color: #0c447c; }
+        canvas { width: 100% !important; height: 400px !important; }
+    </style>
 </head>
 <body>
 
-<!-- ... (seu HTML original de menus e containers) ... -->
+    <div class="container">
+        <h1>Análise Tesouro Direto</h1>
+        <div id="status-mensagem">Iniciando carregamento dos dados...</div>
+        
+        <div id="dashboard-content">
+            <canvas id="graficoTesouro"></canvas>
+        </div>
+    </div>
 
-<script>
-// Lógica para carregar o arquivo dados.csv automaticamente
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('dados.csv')
-        .then(response => {
-            if (!response.ok) throw new Error("Arquivo dados.csv não encontrado no servidor.");
-            return response.text();
-        })
-        .then(csvText => {
-            Papa.parse(csvText, {
-                header: true,
-                dynamicTyping: true,
-                complete: function(results) {
-                    console.log("Dados carregados com sucesso:", results.data);
-                    // Aqui você chama a função que renderiza seus gráficos
-                    // Exemplo: inicializarDash(results.data);
+    <script>
+        // Esta função só roda depois que as bibliotecas e o HTML carregarem
+        window.onload = function() {
+            const status = document.getElementById('status-mensagem');
+
+            // 1. Tentar carregar o CSV
+            fetch('dados.csv')
+                .then(response => {
+                    if (!response.ok) throw new Error('Arquivo dados.csv não encontrado no repositório.');
+                    return response.text();
+                })
+                .then(csvData => {
+                    status.innerText = "Processando informações...";
+                    
+                    Papa.parse(csvData, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            status.style.display = 'none';
+                            renderizarGrafico(results.data);
+                        }
+                    });
+                })
+                .catch(error => {
+                    status.style.background = '#fcebeb';
+                    status.style.color = '#a32d2d';
+                    status.innerHTML = `<b>Erro:</b> ${error.message}<br><small>Verifique se o arquivo se chama exatamente <b>dados.csv</b> e está na raiz do GitHub.</small>`;
+                    console.error(error);
+                });
+        };
+
+        function renderizarGrafico(dados) {
+            const ctx = document.getElementById('graficoTesouro').getContext('2d');
+            
+            // Ajuste os nomes das colunas conforme o seu CSV (ex: 'Data' e 'Valor')
+            const labels = dados.map(item => item.Data || item.data || '');
+            const valores = dados.map(item => item.Valor || item.valor || 0);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Evolução do Título',
+                        data: valores,
+                        borderColor: '#185FA5',
+                        backgroundColor: 'rgba(24, 95, 165, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
             });
-        })
-        .catch(error => {
-            console.error("Erro ao carregar o site:", error);
-            document.body.innerHTML += `<div style="color:red; padding:20px; text-align:center;">
-                Erro: Certifique-se de que o arquivo <b>dados.csv</b> está na raiz do seu repositório GitHub.
-            </div>`;
-        });
-});
-
-// O seu array RAW original pode ser mantido como fallback
-var RAW = [...]; 
-</script>
+        }
+    </script>
 </body>
 </html>
